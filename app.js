@@ -1,39 +1,33 @@
 const DB_NAME = "BusinessProductsDB";
-
 const STORE_NAME = "products";
 
 let db;
-
 let products = [];
-
 let currentImage = null;
-
+let selectedProductId = null;
 let deferredPrompt = null;
 
 
-/* =========================
+/* =====================================================
    SHORT SELECTOR
-========================= */
+===================================================== */
 
 const $ = (id) => document.getElementById(id);
 
 
-/* =========================
+/* =====================================================
    OPEN DATABASE
-========================= */
+===================================================== */
 
 function openDatabase() {
 
     return new Promise((resolve, reject) => {
 
-        const request =
-            indexedDB.open(DB_NAME, 1);
-
+        const request = indexedDB.open(DB_NAME, 1);
 
         request.onupgradeneeded = function (event) {
 
-            const database =
-                event.target.result;
+            const database = event.target.result;
 
             if (!database.objectStoreNames.contains(STORE_NAME)) {
 
@@ -48,7 +42,6 @@ function openDatabase() {
 
         };
 
-
         request.onsuccess = function (event) {
 
             db = event.target.result;
@@ -56,7 +49,6 @@ function openDatabase() {
             resolve();
 
         };
-
 
         request.onerror = function () {
 
@@ -69,9 +61,9 @@ function openDatabase() {
 }
 
 
-/* =========================
+/* =====================================================
    GET ALL PRODUCTS
-========================= */
+===================================================== */
 
 function getProducts() {
 
@@ -91,7 +83,6 @@ function getProducts() {
         const request =
             store.getAll();
 
-
         request.onsuccess = function () {
 
             resolve(
@@ -99,7 +90,6 @@ function getProducts() {
             );
 
         };
-
 
         request.onerror = function () {
 
@@ -112,9 +102,9 @@ function getProducts() {
 }
 
 
-/* =========================
+/* =====================================================
    SAVE PRODUCT
-========================= */
+===================================================== */
 
 function saveProduct(product) {
 
@@ -134,13 +124,11 @@ function saveProduct(product) {
         const request =
             store.put(product);
 
-
         request.onsuccess = function () {
 
             resolve();
 
         };
-
 
         request.onerror = function () {
 
@@ -153,9 +141,9 @@ function saveProduct(product) {
 }
 
 
-/* =========================
+/* =====================================================
    DELETE PRODUCT
-========================= */
+===================================================== */
 
 function deleteProductFromDB(id) {
 
@@ -175,13 +163,11 @@ function deleteProductFromDB(id) {
         const request =
             store.delete(id);
 
-
         request.onsuccess = function () {
 
             resolve();
 
         };
-
 
         request.onerror = function () {
 
@@ -194,15 +180,14 @@ function deleteProductFromDB(id) {
 }
 
 
-/* =========================
+/* =====================================================
    ESCAPE HTML
-========================= */
+===================================================== */
 
 function escapeHTML(value = "") {
 
     return String(value).replace(
         /[&<>"']/g,
-
         function (character) {
 
             const map = {
@@ -223,9 +208,9 @@ function escapeHTML(value = "") {
 }
 
 
-/* =========================
-   PRICE
-========================= */
+/* =====================================================
+   FORMAT PRICE
+===================================================== */
 
 function formatPrice(value) {
 
@@ -251,9 +236,9 @@ function formatPrice(value) {
 }
 
 
-/* =========================
-   STOCK
-========================= */
+/* =====================================================
+   FORMAT STOCK
+===================================================== */
 
 function formatStock(value) {
 
@@ -273,55 +258,80 @@ function formatStock(value) {
 }
 
 
-/* =========================
-   REFRESH
-========================= */
+/* =====================================================
+   REFRESH PRODUCTS
+===================================================== */
 
 async function refreshProducts() {
 
     products =
         await getProducts();
 
-
     products.sort(
         function (a, b) {
 
-            return a.code.localeCompare(
-                b.code
-            );
+            return String(a.code || "")
+                .localeCompare(
+                    String(b.code || "")
+                );
 
         }
     );
-
 
     renderProducts();
 
 }
 
 
-/* =========================
+/* =====================================================
    RENDER PRODUCTS
-========================= */
+===================================================== */
 
 function renderProducts() {
 
-    const search =
-        $("searchInput")
-            .value
-            .trim()
-            .toLowerCase();
+    const searchInput = $("searchInput");
 
+    const search =
+        searchInput
+            ? searchInput.value
+                .trim()
+                .toLowerCase()
+            : "";
 
     const filtered =
         products.filter(
             function (product) {
 
-                return product.code
+                return String(
+                    product.code || ""
+                )
                     .toLowerCase()
                     .includes(search);
 
             }
         );
+
+
+    /* PRODUCT COUNT */
+
+    if ($("productCount")) {
+
+        $("productCount").textContent =
+            filtered.length +
+            (
+                filtered.length === 1
+                    ? " item"
+                    : " items"
+            );
+
+    }
+
+
+    /* PRODUCT LIST */
+
+    if (!$("productList")) {
+        return;
+    }
 
 
     $("productList").innerHTML =
@@ -334,17 +344,22 @@ function renderProducts() {
                         ?
 
                     `
-                    <img
-                        class="product-image"
-                        src="${product.image}"
-                        alt="Product">
+                    <div class="product-image">
+                        <img
+                            src="${product.image}"
+                            alt="${escapeHTML(product.name || product.code || "Product")}"
+                        >
+                    </div>
                     `
 
                         :
 
                     `
-                    <div class="product-image no-image">
-                        📦
+                    <div class="product-image">
+                        <div class="product-image-placeholder">
+                            <span>📦</span>
+                            <p>No image</p>
+                        </div>
                     </div>
                     `;
 
@@ -355,53 +370,77 @@ function renderProducts() {
 
                     ${image}
 
-                    <div class="info">
+                    <div class="product-card-body">
 
-                        <h3 class="code">
-                            ${escapeHTML(product.code)}
-                        </h3>
+                        <div class="product-top">
 
-                        <p class="size">
-                            ${escapeHTML(product.size || "")}
-                        </p>
+                            <div>
 
-                        <p class="price">
-                            ${formatPrice(product.price)}
-                        </p>
+                                <div class="product-code">
+                                    ${escapeHTML(product.code || "")}
+                                </div>
 
-                        <p class="stock">
-                            ${formatStock(product.stock)}
-                        </p>
+                                <h3 class="product-name">
+                                    ${escapeHTML(
+                                        product.name ||
+                                        "Product"
+                                    )}
+                                </h3>
 
-                        <button
-                            class="read"
-                            onclick="showDetails('${product.id}')">
-
-                            Read More →
-
-                        </button>
+                            </div>
 
 
-                        <div class="card-actions">
+                            <div class="product-price">
 
-                            <button
-                                class="small-btn edit-btn"
-                                onclick="editProduct('${product.id}')">
+                                <small>PRICE</small>
 
-                                Edit
+                                <strong>
+                                    ${formatPrice(product.price)}
+                                </strong>
 
-                            </button>
-
-
-                            <button
-                                class="small-btn delete-btn"
-                                onclick="deleteProduct('${product.id}')">
-
-                                Delete
-
-                            </button>
+                            </div>
 
                         </div>
+
+
+                        <div class="product-meta">
+
+                            <div class="meta-item">
+
+                                <span>SIZE</span>
+
+                                <strong>
+                                    ${escapeHTML(
+                                        product.size || "—"
+                                    )}
+                                </strong>
+
+                            </div>
+
+
+                            <div class="meta-item">
+
+                                <span>STOCK</span>
+
+                                <strong>
+                                    ${formatStock(product.stock)}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            class="read-more-btn"
+                            type="button"
+                            onclick="showDetails('${product.id}')">
+
+                            Read More
+
+                            <span>→</span>
+
+                        </button>
 
                     </div>
 
@@ -414,86 +453,156 @@ function renderProducts() {
         .join("");
 
 
-    $("emptyState").hidden =
-        filtered.length !== 0;
+    /* EMPTY STATE */
+
+    if ($("emptyState")) {
+
+        $("emptyState").style.display =
+            filtered.length === 0
+                ? "block"
+                : "none";
+
+    }
+
+
+    /* CLEAR SEARCH BUTTON */
+
+    if ($("clearSearch")) {
+
+        $("clearSearch").style.display =
+            search.length > 0
+                ? "block"
+                : "none";
+
+    }
 
 }
 
 
-/* =========================
+/* =====================================================
    OPEN ADD / EDIT FORM
-========================= */
+===================================================== */
 
 function openForm(product = null) {
 
-    $("formModal").hidden = false;
+    const modal = $("productModal");
+
+    if (!modal) {
+        return;
+    }
 
 
-    $("formTitle").textContent =
+    modal.classList.add("active");
+
+
+    $("modalTitle").textContent =
         product
             ? "Edit Product"
             : "Add Product";
 
 
-    $("productId").value =
-        product?.id || "";
-
-
-    $("code").value =
+    $("productCode").value =
         product?.code || "";
 
 
-    $("size").value =
+    $("productName").value =
+        product?.name || "";
+
+
+    $("productSize").value =
         product?.size || "";
 
 
-    $("price").value =
-        product?.price ?? "";
-
-
-    $("stock").value =
+    $("productStock").value =
         product?.stock ?? "";
 
 
-    $("description").value =
+    $("productPrice").value =
+        product?.price ?? "";
+
+
+    $("productDescription").value =
         product?.description || "";
+
+
+    selectedProductId =
+        product?.id || null;
 
 
     currentImage =
         product?.image || null;
 
 
-    $("image").value = "";
-
-
-    $("preview").innerHTML =
-        currentImage
-
-            ?
-
-        `<img src="${currentImage}" alt="Preview">`
-
-            :
-
-        "";
+    renderImagePreview();
 
 }
 
 
-/* =========================
+/* =====================================================
    CLOSE FORM
-========================= */
+===================================================== */
 
 function closeForm() {
 
-    $("formModal").hidden = true;
+    const modal = $("productModal");
+
+    if (!modal) {
+        return;
+    }
+
+    modal.classList.remove("active");
 
 }
 
 
-/* =========================
-   EDIT
-========================= */
+/* =====================================================
+   RENDER IMAGE PREVIEW
+===================================================== */
+
+function renderImagePreview() {
+
+    const preview = $("imagePreview");
+
+    if (!preview) {
+        return;
+    }
+
+
+    if (currentImage) {
+
+        preview.innerHTML = `
+            <img
+                src="${currentImage}"
+                alt="Product Preview"
+            >
+        `;
+
+    } else {
+
+        preview.innerHTML = `
+
+            <div class="upload-placeholder">
+
+                <span>＋</span>
+
+                <p>Add Product Image</p>
+
+                <small>
+                    Tap to choose from phone
+                </small>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+/* =====================================================
+   EDIT PRODUCT
+===================================================== */
 
 function editProduct(id) {
 
@@ -516,9 +625,9 @@ function editProduct(id) {
 }
 
 
-/* =========================
-   DELETE
-========================= */
+/* =====================================================
+   DELETE PRODUCT
+===================================================== */
 
 async function deleteProduct(id) {
 
@@ -533,9 +642,7 @@ async function deleteProduct(id) {
 
 
     if (!product) {
-
         return;
-
     }
 
 
@@ -546,23 +653,32 @@ async function deleteProduct(id) {
 
 
     if (!confirmed) {
-
         return;
-
     }
 
 
     await deleteProductFromDB(id);
 
 
+    if (
+        selectedProductId === id
+    ) {
+
+        selectedProductId = null;
+
+    }
+
+
+    closeDetails();
+
     await refreshProducts();
 
 }
 
 
-/* =========================
+/* =====================================================
    SHOW DETAILS
-========================= */
+===================================================== */
 
 function showDetails(id) {
 
@@ -577,273 +693,138 @@ function showDetails(id) {
 
 
     if (!product) {
-
         return;
+    }
+
+
+    selectedProductId = id;
+
+
+    /* IMAGE */
+
+    if ($("detailsImage")) {
+
+        if (product.image) {
+
+            $("detailsImage").innerHTML = `
+
+                <img
+                    src="${product.image}"
+                    alt="${escapeHTML(
+                        product.name ||
+                        product.code ||
+                        "Product"
+                    )}"
+                >
+
+            `;
+
+        } else {
+
+            $("detailsImage").innerHTML = `
+
+                <div class="product-image-placeholder">
+
+                    <span>📦</span>
+
+                    <p>No image available</p>
+
+                </div>
+
+            `;
+
+        }
 
     }
 
 
-    $("details").innerHTML = `
+    /* CODE */
 
-        ${
-            product.image
-
-                ?
-
-            `
-            <img
-                class="detail-image"
-                src="${product.image}"
-                alt="Product">
-            `
-
-                :
-
-            ""
-        }
+    $("detailsCode").textContent =
+        product.code || "—";
 
 
-        <div class="detail-row">
+    /* NAME */
 
-            <span>
-                Product Code
-            </span>
-
-            <span>
-                ${escapeHTML(product.code)}
-            </span>
-
-        </div>
+    $("detailsName").textContent =
+        product.name ||
+        "Product";
 
 
-        <div class="detail-row">
+    /* SIZE */
 
-            <span>
-                Size
-            </span>
-
-            <span>
-                ${escapeHTML(product.size || "—")}
-            </span>
-
-        </div>
+    $("detailsSize").textContent =
+        product.size ||
+        "—";
 
 
-        <div class="detail-row">
+    /* STOCK */
 
-            <span>
-                Price
-            </span>
-
-            <span>
-                ${formatPrice(product.price)}
-            </span>
-
-        </div>
+    $("detailsStock").textContent =
+        formatStock(product.stock);
 
 
-        <div class="detail-row">
+    /* PRICE */
 
-            <span>
-                Stock
-            </span>
-
-            <span>
-                ${formatStock(product.stock)}
-            </span>
-
-        </div>
+    $("detailsPrice").textContent =
+        formatPrice(product.price);
 
 
-        <h3>
-            Description
-        </h3>
+    /* DESCRIPTION */
+
+    $("detailsDescription").textContent =
+        product.description ||
+        "No description available.";
 
 
-        <div class="description">
+    /* SHOW MODAL */
 
-            ${escapeHTML(
-                product.description ||
-                "No description added."
-            )}
-
-        </div>
-
-
-        <div class="form-actions">
-
-            <button
-                class="secondary-btn"
-                onclick="editFromDetails('${product.id}')">
-
-                Edit
-
-            </button>
-
-
-            <button
-                class="delete-btn"
-                onclick="deleteFromDetails('${product.id}')">
-
-                Delete
-
-            </button>
-
-        </div>
-
-    `;
-
-
-    $("detailsModal").hidden = false;
+    $("detailsModal").classList.add(
+        "active"
+    );
 
 }
 
 
-/* =========================
-   EDIT FROM DETAILS
-========================= */
-
-function editFromDetails(id) {
-
-    $("detailsModal").hidden = true;
-
-    editProduct(id);
-
-}
-
-
-/* =========================
-   DELETE FROM DETAILS
-========================= */
-
-async function deleteFromDetails(id) {
-
-    $("detailsModal").hidden = true;
-
-    await deleteProduct(id);
-
-}
-
-
-/* =========================
-   ADD BUTTON
-========================= */
-
-$("addBtn").onclick = function () {
-
-    openForm();
-
-};
-
-
-/* =========================
-   CLOSE FORM
-========================= */
-
-$("closeForm").onclick =
-    closeForm;
-
-$("cancelForm").onclick =
-    closeForm;
-
-
-/* =========================
+/* =====================================================
    CLOSE DETAILS
-========================= */
+===================================================== */
 
-$("closeDetails").onclick =
-    function () {
+function closeDetails() {
 
-        $("detailsModal").hidden = true;
+    const modal =
+        $("detailsModal");
 
-    };
+    if (!modal) {
+        return;
+    }
 
+    modal.classList.remove(
+        "active"
+    );
 
-/* =========================
-   SEARCH
-========================= */
-
-$("searchInput").oninput =
-    function () {
-
-        renderProducts();
-
-    };
+}
 
 
-/* =========================
-   CLEAR SEARCH
-========================= */
+/* =====================================================
+   SAVE PRODUCT FORM
+===================================================== */
 
-$("clearSearch").onclick =
-    function () {
-
-        $("searchInput").value = "";
-
-        renderProducts();
-
-        $("searchInput").focus();
-
-    };
-
-
-/* =========================
-   IMAGE
-========================= */
-
-$("image").onchange =
-    function (event) {
-
-        const file =
-            event.target.files[0];
-
-
-        if (!file) {
-
-            return;
-
-        }
-
-
-        const reader =
-            new FileReader();
-
-
-        reader.onload =
-            function () {
-
-                currentImage =
-                    reader.result;
-
-
-                $("preview").innerHTML = `
-
-                    <img
-                        src="${currentImage}"
-                        alt="Preview">
-
-                `;
-
-            };
-
-
-        reader.readAsDataURL(file);
-
-    };
-
-
-/* =========================
-   SAVE FORM
-========================= */
-
-$("productForm").onsubmit =
+$("productForm").addEventListener(
+    "submit",
     async function (event) {
 
         event.preventDefault();
 
 
         const code =
-            $("code")
+            $("productCode")
+                .value
+                .trim();
+
+
+        const name =
+            $("productName")
                 .value
                 .trim();
 
@@ -860,18 +841,24 @@ $("productForm").onsubmit =
 
 
         const id =
-            $("productId").value ||
+            selectedProductId ||
             crypto.randomUUID();
 
+
+        /* CHECK DUPLICATE CODE */
 
         const duplicate =
             products.find(
                 function (product) {
 
                     return (
-                        product.code
+
+                        String(
+                            product.code || ""
+                        )
                             .toLowerCase() ===
                         code.toLowerCase()
+
                     )
                     &&
                     product.id !== id;
@@ -891,27 +878,31 @@ $("productForm").onsubmit =
         }
 
 
+        /* CREATE PRODUCT */
+
         const product = {
 
             id: id,
 
             code: code,
 
+            name: name,
+
             size:
-                $("size")
+                $("productSize")
                     .value
                     .trim(),
 
             price:
-                $("price")
+                $("productPrice")
                     .value,
 
             stock:
-                $("stock")
+                $("productStock")
                     .value,
 
             description:
-                $("description")
+                $("productDescription")
                     .value
                     .trim(),
 
@@ -930,14 +921,349 @@ $("productForm").onsubmit =
         closeForm();
 
 
+        selectedProductId = null;
+
+
         await refreshProducts();
 
-    };
+    }
+);
 
 
-/* =========================
+/* =====================================================
+   ADD PRODUCT BUTTON
+===================================================== */
+
+if ($("addProductBtn")) {
+
+    $("addProductBtn").addEventListener(
+        "click",
+        function () {
+
+            openForm();
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   EMPTY STATE ADD BUTTON
+===================================================== */
+
+if ($("emptyAddBtn")) {
+
+    $("emptyAddBtn").addEventListener(
+        "click",
+        function () {
+
+            openForm();
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   CLOSE FORM BUTTON
+===================================================== */
+
+if ($("closeModal")) {
+
+    $("closeModal").addEventListener(
+        "click",
+        function () {
+
+            closeForm();
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   FORM OVERLAY CLOSE
+===================================================== */
+
+const productModal =
+    $("productModal");
+
+if (productModal) {
+
+    const overlay =
+        productModal.querySelector(
+            ".modal-overlay"
+        );
+
+    if (overlay) {
+
+        overlay.addEventListener(
+            "click",
+            function () {
+
+                closeForm();
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   CLOSE DETAILS BUTTON
+===================================================== */
+
+if ($("closeDetails")) {
+
+    $("closeDetails").addEventListener(
+        "click",
+        function () {
+
+            closeDetails();
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   DETAILS OVERLAY CLOSE
+===================================================== */
+
+const detailsModal =
+    $("detailsModal");
+
+if (detailsModal) {
+
+    const overlay =
+        detailsModal.querySelector(
+            ".modal-overlay"
+        );
+
+    if (overlay) {
+
+        overlay.addEventListener(
+            "click",
+            function () {
+
+                closeDetails();
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   EDIT FROM DETAILS
+===================================================== */
+
+if ($("editProductBtn")) {
+
+    $("editProductBtn").addEventListener(
+        "click",
+        function () {
+
+            if (!selectedProductId) {
+                return;
+            }
+
+
+            const product =
+                products.find(
+                    function (item) {
+
+                        return (
+                            item.id ===
+                            selectedProductId
+                        );
+
+                    }
+                );
+
+
+            if (product) {
+
+                closeDetails();
+
+                openForm(product);
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   DELETE FROM DETAILS
+===================================================== */
+
+if ($("deleteProductBtn")) {
+
+    $("deleteProductBtn").addEventListener(
+        "click",
+        async function () {
+
+            if (!selectedProductId) {
+                return;
+            }
+
+
+            await deleteProduct(
+                selectedProductId
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   SEARCH
+===================================================== */
+
+if ($("searchInput")) {
+
+    $("searchInput").addEventListener(
+        "input",
+        function () {
+
+            renderProducts();
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   CLEAR SEARCH
+===================================================== */
+
+if ($("clearSearch")) {
+
+    $("clearSearch").addEventListener(
+        "click",
+        function () {
+
+            $("searchInput").value = "";
+
+            renderProducts();
+
+            $("searchInput").focus();
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   CHOOSE IMAGE
+===================================================== */
+
+if ($("chooseImageBtn")) {
+
+    $("chooseImageBtn").addEventListener(
+        "click",
+        function () {
+
+            $("productImage").click();
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   IMAGE PREVIEW CLICK
+===================================================== */
+
+if ($("imagePreview")) {
+
+    $("imagePreview").addEventListener(
+        "click",
+        function () {
+
+            $("productImage").click();
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   IMAGE SELECT
+===================================================== */
+
+if ($("productImage")) {
+
+    $("productImage").addEventListener(
+        "change",
+        function (event) {
+
+            const file =
+                event.target.files[0];
+
+
+            if (!file) {
+                return;
+            }
+
+
+            /* CHECK IMAGE */
+
+            if (!file.type.startsWith("image/")) {
+
+                alert(
+                    "Please choose an image file."
+                );
+
+                return;
+
+            }
+
+
+            const reader =
+                new FileReader();
+
+
+            reader.onload =
+                function () {
+
+                    currentImage =
+                        reader.result;
+
+
+                    renderImagePreview();
+
+                };
+
+
+            reader.readAsDataURL(file);
+
+        }
+    );
+
+}
+
+
+/* =====================================================
    PWA INSTALL
-========================= */
+===================================================== */
 
 window.addEventListener(
     "beforeinstallprompt",
@@ -947,39 +1273,58 @@ window.addEventListener(
 
         deferredPrompt = event;
 
-        $("installBtn").hidden = false;
+
+        const installBtn =
+            $("installBtn");
+
+
+        if (installBtn) {
+
+            installBtn.style.display =
+                "block";
+
+        }
 
     }
 );
 
 
-$("installBtn").onclick =
-    async function () {
+/* =====================================================
+   INSTALL BUTTON
+===================================================== */
 
-        if (!deferredPrompt) {
+if ($("installBtn")) {
 
-            return;
+    $("installBtn").addEventListener(
+        "click",
+        async function () {
+
+            if (!deferredPrompt) {
+                return;
+            }
+
+
+            deferredPrompt.prompt();
+
+
+            await deferredPrompt.userChoice;
+
+
+            deferredPrompt = null;
+
+
+            $("installBtn").style.display =
+                "none";
 
         }
+    );
+
+}
 
 
-        deferredPrompt.prompt();
-
-
-        await deferredPrompt.userChoice;
-
-
-        deferredPrompt = null;
-
-
-        $("installBtn").hidden = true;
-
-    };
-
-
-/* =========================
+/* =====================================================
    SERVICE WORKER
-========================= */
+===================================================== */
 
 if ("serviceWorker" in navigator) {
 
@@ -1006,9 +1351,9 @@ if ("serviceWorker" in navigator) {
 }
 
 
-/* =========================
+/* =====================================================
    START APP
-========================= */
+===================================================== */
 
 openDatabase()
     .then(

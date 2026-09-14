@@ -1,5 +1,5 @@
 const CACHE_NAME =
-    "business-products-v1";
+    "business-products-v2";
 
 
 const FILES_TO_CACHE = [
