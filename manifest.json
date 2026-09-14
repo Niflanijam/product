@@ -1,0 +1,9 @@
+{
+    "name": "Business Products",
+    "short_name": "Products",
+    "start_url": "./",
+    "display": "standalone",
+    "background_color": "#f7f5ff",
+    "theme_color": "#6d4aff",
+    "description": "Offline business product manager"
+}

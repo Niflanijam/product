@@ -1,0 +1,338 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <meta name="theme-color" content="#6d4aff">
+    <meta name="description" content="Offline Business Product Manager">
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+
+    <title>Business Products</title>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- HEADER -->
+    <header class="app-header">
+        <div>
+            <p class="header-small">OFFLINE PRODUCT MANAGER</p>
+            <h1>Business Products</h1>
+        </div>
+
+        <button id="installBtn" class="install-btn" style="display:none;">
+            Install
+        </button>
+    </header>
+
+
+    <!-- SEARCH -->
+    <section class="search-section">
+
+        <div class="search-box">
+            <span class="search-icon">⌕</span>
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search product code..."
+                autocomplete="off"
+            />
+
+            <button id="clearSearch" class="clear-search">×</button>
+        </div>
+
+    </section>
+
+
+    <!-- PRODUCT COUNT -->
+    <div class="product-heading">
+        <div>
+            <span class="section-label">YOUR COLLECTION</span>
+            <h2>Products</h2>
+        </div>
+
+        <span id="productCount" class="product-count">0 items</span>
+    </div>
+
+
+    <!-- PRODUCTS -->
+    <main id="productList" class="product-list">
+        <!-- Products are loaded by app.js -->
+    </main>
+
+
+    <!-- EMPTY STATE -->
+    <div id="emptyState" class="empty-state" style="display:none;">
+
+        <div class="empty-icon">📦</div>
+
+        <h3>No products found</h3>
+
+        <p>
+            Add your first product to start building your collection.
+        </p>
+
+        <button id="emptyAddBtn" class="primary-btn">
+            + Add Product
+        </button>
+
+    </div>
+
+
+    <!-- ADD PRODUCT BUTTON -->
+    <button id="addProductBtn" class="floating-add">
+        <span>+</span>
+        <strong>Add Product</strong>
+    </button>
+
+
+</div>
+
+
+<!-- =====================================================
+     ADD / EDIT PRODUCT MODAL
+===================================================== -->
+
+<div id="productModal" class="modal">
+
+    <div class="modal-overlay"></div>
+
+    <div class="modal-content">
+
+        <div class="modal-header">
+            <div>
+                <span class="modal-label">PRODUCT</span>
+                <h2 id="modalTitle">Add Product</h2>
+            </div>
+
+            <button id="closeModal" class="close-btn">×</button>
+        </div>
+
+
+        <form id="productForm">
+
+            <!-- IMAGE -->
+            <div class="image-upload-area">
+
+                <div id="imagePreview" class="image-preview">
+                    <div class="upload-placeholder">
+                        <span>＋</span>
+                        <p>Add Product Image</p>
+                        <small>Tap to choose from phone</small>
+                    </div>
+                </div>
+
+                <input
+                    type="file"
+                    id="productImage"
+                    accept="image/*"
+                    hidden
+                />
+
+                <button
+                    type="button"
+                    id="chooseImageBtn"
+                    class="image-btn">
+                    Choose Image
+                </button>
+
+            </div>
+
+
+            <!-- PRODUCT CODE -->
+            <div class="form-group">
+                <label for="productCode">Product Code</label>
+
+                <input
+                    type="text"
+                    id="productCode"
+                    placeholder="Example: SA019"
+                    required
+                />
+            </div>
+
+
+            <!-- PRODUCT NAME -->
+            <div class="form-group">
+                <label for="productName">Product Name</label>
+
+                <input
+                    type="text"
+                    id="productName"
+                    placeholder="Enter product name"
+                />
+            </div>
+
+
+            <!-- SIZE + STOCK -->
+            <div class="form-row">
+
+                <div class="form-group">
+                    <label for="productSize">Size</label>
+
+                    <input
+                        type="text"
+                        id="productSize"
+                        placeholder='08"'
+                    />
+                </div>
+
+
+                <div class="form-group">
+                    <label for="productStock">Stock</label>
+
+                    <input
+                        type="number"
+                        id="productStock"
+                        placeholder="120"
+                        min="0"
+                    />
+                </div>
+
+            </div>
+
+
+            <!-- PRICE -->
+            <div class="form-group">
+                <label for="productPrice">Price</label>
+
+                <div class="price-input">
+                    <span>Rs.</span>
+
+                    <input
+                        type="number"
+                        id="productPrice"
+                        placeholder="838.75"
+                        min="0"
+                        step="0.01"
+                        required
+                    />
+                </div>
+            </div>
+
+
+            <!-- DESCRIPTION -->
+            <div class="form-group">
+                <label for="productDescription">Description</label>
+
+                <textarea
+                    id="productDescription"
+                    placeholder="Enter product details..."
+                    rows="4">
+                </textarea>
+            </div>
+
+
+            <!-- SAVE -->
+            <button type="submit" class="save-btn">
+                Save Product
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     PRODUCT DETAILS MODAL
+===================================================== -->
+
+<div id="detailsModal" class="modal">
+
+    <div class="modal-overlay"></div>
+
+    <div class="details-content">
+
+        <button id="closeDetails" class="details-close">
+            ×
+        </button>
+
+
+        <!-- LARGE IMAGE -->
+        <div id="detailsImage" class="details-image">
+        </div>
+
+
+        <div class="details-body">
+
+            <span class="details-code" id="detailsCode">
+                SA019
+            </span>
+
+            <h2 id="detailsName">
+                Product Name
+            </h2>
+
+
+            <!-- INFORMATION -->
+            <div class="details-info">
+
+                <div class="info-item">
+                    <span>SIZE</span>
+                    <strong id="detailsSize">-</strong>
+                </div>
+
+                <div class="info-item">
+                    <span>STOCK</span>
+                    <strong id="detailsStock">-</strong>
+                </div>
+
+            </div>
+
+
+            <!-- PRICE -->
+            <div class="details-price">
+                <span>PRICE</span>
+
+                <strong id="detailsPrice">
+                    Rs. 0.00
+                </strong>
+            </div>
+
+
+            <!-- DESCRIPTION -->
+            <div class="description-section">
+
+                <span>DESCRIPTION</span>
+
+                <p id="detailsDescription">
+                    No description available.
+                </p>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+            <div class="details-actions">
+
+                <button id="editProductBtn" class="edit-btn">
+                    ✎ Edit
+                </button>
+
+                <button id="deleteProductBtn" class="delete-btn">
+                    Delete
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="app.js"></script>
+
+</body>
+</html>
+
