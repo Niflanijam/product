@@ -298,18 +298,36 @@ function renderProducts() {
                 .toLowerCase()
             : "";
 
-    const filtered =
-        products.filter(
-            function (product) {
+   const filtered =
+    products.filter(
+        function (product) {
 
-                return String(
-                    product.code || ""
-                )
-                    .toLowerCase()
-                    .includes(search);
+            const code =
+                String(product.code || "")
+                    .toLowerCase();
 
-            }
-        );
+            const name =
+                String(product.name || "")
+                    .toLowerCase();
+
+            return (
+                code.includes(search) ||
+                name.includes(search)
+            );
+
+        }
+    );
+   
+   
+
+   
+   
+   
+   
+   
+
+   
+   
 
 
     /* PRODUCT COUNT */
